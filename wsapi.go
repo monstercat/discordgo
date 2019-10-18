@@ -261,6 +261,7 @@ type heartbeatOp struct {
 
 type helloOp struct {
 	HeartbeatInterval time.Duration `json:"heartbeat_interval"`
+	Trace             []string      `json:"_trace"`
 }
 
 // FailedHeartbeatAcks is the Number of heartbeat intervals to wait until forcing a connection restart.
@@ -662,7 +663,7 @@ func (s *Session) ChannelVoiceJoinV2(opts *ChannelVoiceJoinOptions) (voice *Voic
 // This should only be used when the VoiceServerUpdate will be intercepted and used elsewhere.
 //
 //    gID     : Guild ID of the channel to join.
-//    cID     : Channel ID of the channel to join, leave empty to disconnect.
+//    cID     : Channel ID of the channel to join.
 //    mute    : If true, you will be set to muted upon joining.
 //    deaf    : If true, you will be set to deafened upon joining.
 func (s *Session) ChannelVoiceJoinManual(gID, cID string, mute, deaf bool) (err error) {
@@ -678,18 +679,15 @@ func (s *Session) ChannelVoiceJoinManual(gID, cID string, mute, deaf bool) (err 
 func (s *Session) ChannelVoiceJoinManualV2(opts *ChannelVoiceJoinOptions) (err error) {
 	s.log(LogInformational, "called")
 
-	var channelID *string
-	if cID == "" {
-		channelID = nil
-	} else {
-		channelID = &cID
-	}
-
 	// Send the request to Discord that we want to join the voice channel
 	data := voiceChannelJoinOp{4, voiceChannelJoinData{&opts.GuildID, &opts.ChannelID, opts.Mute, opts.Deaf}}
 	s.wsMutex.Lock()
 	err = s.wsConn.WriteJSON(data)
 	s.wsMutex.Unlock()
+	if err != nil {
+		return
+	}
+
 	return
 }
 
